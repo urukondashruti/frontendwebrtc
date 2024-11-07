@@ -1,16 +1,19 @@
-'use client';
+"use client"
+
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import Peer from 'simple-peer';
-// import streamSaver from 'streamsaver';
 
 export default function Home() {
     const [connection, setConnection] = useState(false);
-    const [file, setFile] = useState();
+    const [file, setFile] = useState(null);
+    const [sendProgress, setSendProgress] = useState(0);
+    const [receiveProgress, setReceiveProgress] = useState(0);
     const [gotFile, setGotFile] = useState(false);
     const fileNameRef = useRef();
     const workerRef = useRef();
-
+    const totalFileSizeRef = useRef(0);
+    const totalReceivedFileSizeRef = useRef(0); // Define totalReceivedFileSize as a ref
     const socketRef = useRef();
     const peerRef = useRef();
     const roomID = 'test';
@@ -21,6 +24,7 @@ export default function Home() {
         );
         socketRef.current = io.connect('http://localhost:8000');
         socketRef.current.emit('join room', roomID);
+        
         socketRef.current.on('user conencted', (userId) => {
             peerRef.current = createPeer(userId, socketRef.current.id);
         });
@@ -30,25 +34,16 @@ export default function Home() {
         });
 
         socketRef.current.on('receiving returned signal', (payload) => {
-            console.log('Peer1 Return signal added', payload.signal);
             peerRef.current.signal(payload.signal);
             setConnection(true);
         });
     }, []);
 
     function createPeer(target, callerID) {
-        console.log('Peer1 Created');
-        const peer = new Peer({
-            initiator: true,
-            trickle: false,
-        });
+        const peer = new Peer({ initiator: true, trickle: false });
 
         peer.on('signal', (signal) => {
-            socketRef.current.emit('sending signal', {
-                target,
-                callerID,
-                signal,
-            });
+            socketRef.current.emit('sending signal', { target, callerID, signal });
         });
 
         peer.on('data', handleReceivingData);
@@ -57,39 +52,49 @@ export default function Home() {
     }
 
     function addPeer(incomingSignal, callerID) {
-        console.log('Peer2 Added');
-
-        const peer = new Peer({
-            initiator: false,
-            trickle: false,
-        });
+        const peer = new Peer({ initiator: false, trickle: false });
 
         peer.on('signal', (signal) => {
-            socketRef.current.emit('returning signal', {
-                signal,
-                target: callerID,
-            });
+            socketRef.current.emit('returning signal', { signal, target: callerID });
         });
 
         peer.on('data', handleReceivingData);
 
-        console.log('Peer2 Signal Added', incomingSignal);
         peer.signal(incomingSignal);
         setConnection(true);
         return peer;
     }
 
     function handleReceivingData(data) {
-        console.log('Data incoming');
+        console.log("received")
+        console.log(receiveProgress)
         const worker = workerRef.current;
 
         if (data.toString().includes('done')) {
-            console.log('Data received');
-            setGotFile(true);
             const parsed = JSON.parse(data);
             fileNameRef.current = parsed.fileName;
+            setReceiveProgress(100);
+            setGotFile(true);
+            totalReceivedFileSizeRef.current = 0;
+        } else if (data.toString().includes('fileSize')) {
+            const parsed = JSON.parse(data.toString());
+            setGotFile(true);
+            if (parsed.fileSize) {
+                totalReceivedFileSizeRef.current = 0; // Reset total received size
+                totalFileSizeRef.current = parsed.fileSize; // Set total file size
+                worker.postMessage({ fileSize: parsed.fileSize }); // Send size to worker
+                setReceiveProgress(0); // Initialize progress
+            }
         } else {
+            setGotFile(true);
+            const receivedBytes = data.byteLength;
+            totalReceivedFileSizeRef.current += receivedBytes;
             worker.postMessage(data);
+
+            // Update receiving progress
+            setReceiveProgress(
+                Math.min((totalReceivedFileSizeRef.current / totalFileSizeRef.current) * 100, 100)
+            );
         }
     }
 
@@ -100,62 +105,62 @@ export default function Home() {
         worker.addEventListener('message', (event) => {
             const link = document.createElement('a');
             link.href = event.data;
-            link.download = fileNameRef.current;
-            link.style.display = 'none';
+            link.download = fileNameRef.current || 'download';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(event.data);
         });
     };
+
     const selectFile = (e) => {
-        setFile(e.target.files[0]);
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            setFile(selectedFile);
+        } else {
+            console.error("No file selected.");
+        }
     };
 
     const sendFile = () => {
+        if (!file) {
+            console.error("No file selected to send.");
+            return;
+        }
+    
         const CHUNK_SIZE = 16384;
         const peer = peerRef.current;
-        // const stream = file.stream();
-        // const reader = stream.getReader();
-        handleReading();
-        // reader.read().then((obj) => {
-        //     console.log('Obj', obj);
-        //     handleReading(obj.done, obj.value);
-        // });
+        let offset = 0;
+    
+        // Send the file size and name first
+        peer.write(JSON.stringify({ fileSize: file.size, fileName: file.name }));
+    
         function handleReading() {
             const fileReader = new FileReader();
-            let offset = 0;
-
-            fileReader.addEventListener('load', (event) => {
-                if (
-                    event &&
-                    event.target &&
-                    event.target.result &&
-                    event.target.result instanceof ArrayBuffer
-                ) {
-                    const arrayBuffer = event.target.result;
-                    const chunkBuffer = Buffer.from(arrayBuffer);
-                    peer.write(chunkBuffer);
-
-                    offset += event.target.result.byteLength;
-
-                    if (offset < file.size) {
-                        readSliceBlob(offset);
-                    } else {
-                        console.log('Data sent');
-                        peer.write(
-                            JSON.stringify({ done: true, fileName: file.name })
-                        );
-                    }
+    
+            fileReader.onload = (event) => {
+                const chunk = Buffer.from(event.target.result);
+                peer.write(chunk);
+                offset += chunk.length;
+                setSendProgress((offset / file.size) * 100);
+    
+                if (offset < file.size) {
+                    readSlice(offset);
+                } else {
+                    peer.write(JSON.stringify({ done: true }));
+                    setSendProgress(100);
                 }
-            });
-            readSliceBlob(0);
-
-            function readSliceBlob(offset) {
-                const slicedBlob = file.slice(offset, offset + CHUNK_SIZE);
-                fileReader.readAsArrayBuffer(slicedBlob);
+            };
+    
+            function readSlice(offset) {
+                const blob = file.slice(offset, offset + CHUNK_SIZE);
+                fileReader.readAsArrayBuffer(blob);
             }
+    
+            readSlice(0);
         }
+    
+        handleReading();
     };
 
     return (
@@ -164,13 +169,15 @@ export default function Home() {
                 <div>
                     <input onChange={selectFile} type="file" />
                     <button onClick={sendFile}>Send File</button>
+                    <div>Sending Progress: {sendProgress.toFixed(2)}%</div>
                 </div>
             )}
             {gotFile && (
-                <>
-                    {fileNameRef.current}
+                <div>
+                    <p>File received: {fileNameRef.current}</p>
                     <button onClick={download}>Download</button>
-                </>
+                    <div>Receiving Progress: {receiveProgress.toFixed(2)}%</div>
+                </div>
             )}
         </main>
     );

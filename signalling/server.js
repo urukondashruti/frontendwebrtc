@@ -22,6 +22,8 @@ io.on('connection', (socket) => {
     socket.on('join room', (roomId) => {
         rooms.push(socket.id);
         console.log('Rooms:', rooms);
+        
+        // Find another user in the room (for a 2-user connection)
         const otherUser = rooms.find((id) => id !== socket.id);
         if (otherUser) {
             socket.to(otherUser).emit('user conencted', socket.id);
@@ -37,13 +39,13 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log('Roomssss', rooms);
-        rooms = rooms.filter((id) => socket.id !== id);
-        delete rooms[socket.id];
-        console.log('disconnect', socket.id);
+        console.log('Rooms before disconnect:', rooms);
+        rooms = rooms.filter((id) => id !== socket.id);
+        console.log('Rooms after disconnect:', rooms);
+        console.log('User disconnected:', socket.id);
     });
 });
 
 server.listen(8000, () => {
     console.log('Server running on port 8000');
-});
+});   
