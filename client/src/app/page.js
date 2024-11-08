@@ -166,6 +166,11 @@ export default function Home() {
 
   return (
     <main className="main-container">
+       {!connection && (
+        <div className="no-connection">
+          <p>No one is online</p>
+        </div>
+      )}
       {connection && (
         <div className="send-file-container">
           <h2 className="title">Send a File</h2>
@@ -198,3 +203,4 @@ export default function Home() {
     </main>
   );
 }
+
