@@ -90,4 +90,28 @@
   .download-button:hover {
     background-color: #38a169; /* hover:bg-green-700 */
   }
+  .no-connection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    background-color: #f7fafc;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    color: #4a5568; /* text-gray-700 */
+  }
+  
+  .no-connection h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #e53e3e; /* red-600 for emphasis */
+    margin-bottom: 0.5rem;
+  }
+  
+  .no-connection p {
+    font-size: 1rem;
+    color: #718096; /* text-gray-600 */
+  }
   
