@@ -1,0 +1,93 @@
+/* styles.css */
+
+/* General styling for the main container */
+.main-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: #f7fafc; /* equivalent to bg-gray-100 */
+    padding: 1rem;
+  }
+  
+  /* Container for the file send section */
+  .send-file-container {
+    width: 100%;
+    max-width: 32rem; /* max-w-lg */
+    padding: 1.5rem;
+    background-color: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem; /* rounded-lg */
+  }
+  
+  /* Title styling */
+  .title {
+    font-size: 1.25rem;
+    font-weight: 600; /* equivalent to font-semibold */
+    margin-bottom: 1rem;
+  }
+  
+  /* File input styling */
+  .file-input {
+    display: block;
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 0.375rem; /* rounded-md */
+  }
+  
+  /* Button styling */
+  .button {
+    width: 100%;
+    padding: 0.5rem;
+    background-color: #3182ce; /* bg-blue-600 */
+    color: #fff;
+    font-weight: 600;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .button:disabled {
+    background-color: #e2e8f0; /* disabled:bg-gray-300 */
+  }
+  
+  .button:hover {
+    background-color: #2b6cb0; /* hover:bg-blue-700 */
+  }
+  
+  /* Styling for the file received section */
+  .received-file-container {
+    width: 100%;
+    max-width: 32rem; /* max-w-lg */
+    padding: 1.5rem;
+    background-color: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem; /* rounded-lg */
+    margin-top: 1.5rem;
+  }
+  
+  /* File received progress text */
+  .progress-text {
+    margin-top: 1rem;
+    color: #4a5568; /* text-gray-700 */
+  }
+  
+  /* Styling for the download button */
+  .download-button {
+    width: 100%;
+    padding: 0.5rem;
+    background-color: #48bb78; /* bg-green-600 */
+    color: #fff;
+    font-weight: 600;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .download-button:hover {
+    background-color: #38a169; /* hover:bg-green-700 */
+  }
+  
