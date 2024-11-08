@@ -23,7 +23,7 @@ export default function Home() {
 
   useEffect(() => {
     workerRef.current = new Worker(new URL('../utils/worker.js', import.meta.url));
-    socketRef.current = io.connect('http://localhost:8000');
+    socketRef.current = io.connect('https://webrtcbackend-xis1.onrender.com');
     socketRef.current.emit('join room', roomID);
 
     socketRef.current.on('user conencted', (userId) => {
